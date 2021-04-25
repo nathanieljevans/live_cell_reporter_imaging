@@ -1,0 +1,43 @@
+config...
+-------------------------
+script version: 1.0
+Namespace(data=['./data/HER2/'], drug=['neratinib'], load=['normalized'], nclus=[2], out=['./output/'], resample_sz=[75], resistant_line=['T798I'], sensitive_line=['WT'])
+
+2021-04-25 15:24:38.084582
+-------------------------
+
+sloading data...
+# of datasets to load: 7
+
+filtering to drug and removing NAs...
+Data shape (untreated + drug): (9522, 478)
+length of time series BEFORE removing time points with NA 234
+length of time series AFTER removing time points with NA 139
+
+resampling time series...
+Training data shape BEFORE resampling: (9522, 139, 2)
+Training data shape AFTER resampling: (9522, 75, 2)
+
+performing time-series kmeans clustering...
+
+6.196 --> 4.132 --> 4.028 --> 4.016 --> 4.014 --> 4.013 --> 4.013 --> 4.013 --> 4.013 --> 4.013 --> 4.013 --> 4.013 --> 
+
+
+quantifying experiment by cluster proportions...
+
+performing dim. reduction (pca)...
+PCA explained variance ratio: [1.00000000e+00 6.19606021e-32]
+PC shape: (124, 2)
+
+training classifier...
+sensitive line: WT
+resistant line: T798I
+drug: neratinib
+drug + WT df size:  (14, 4)
+X train shape: (14, 2)
+# neg class (resistant): 7
+# pos class (sensitive): 7
+
+predicting unlabeled sensitivities...
+
+saving results...

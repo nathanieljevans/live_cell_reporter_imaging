@@ -1,0 +1,2 @@
+,accuracy(train),pc1_var,pc2_var,kmeans_inertia,res_line,sens_line,drug,nclus,resample_sz,load,run_id
+0,1.0,1.0,2.4816757147373425e-32,2.683196943485791,T798I,WT,neratinib,2,50,normalized,5b734f9c-35b6-4ac7-8ec5-aa32d96cd7ea
