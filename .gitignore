@@ -1,4 +1,3 @@
-./notebooks/lightning_logs/
-./data/*.pkl
-./data/*.csv
-./outout/**
+./notebooks/lightning_logs/**
+./data/**
+./output/**
