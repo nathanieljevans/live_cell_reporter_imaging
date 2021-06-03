@@ -200,7 +200,8 @@ if __name__ == '__main__':
         ########### FIT K-MEANS ##############
         print('\nperforming time-series kmeans clustering...')
         print()
-        km = TimeSeriesKMeans(n_clusters=args.nclus[0], verbose=True, random_state=0, metric='euclidean', n_jobs=8)
+        #                                                      random_state=0, 
+        km = TimeSeriesKMeans(n_clusters=args.nclus[0], verbose=True,metric='euclidean', n_jobs=8)
         y_pred = km.fit_predict(X_train)
         print()
         
@@ -301,8 +302,9 @@ if __name__ == '__main__':
         print('X train shape:', X.shape)
         print('# neg class (resistant):', np.sum(y_res))
         print('# pos class (sensitive):', np.sum(y_sens))
- 
-        model = SVC(kernel='linear', C=10, probability=True, random_state=0)
+         
+        #                                                 , random_state=0
+        model = SVC(kernel='linear', C=10, probability=True)
         model.fit(X,y) 
         y_pred = model.predict(X)
         accuracy = accuracy_score(y, y_pred)
