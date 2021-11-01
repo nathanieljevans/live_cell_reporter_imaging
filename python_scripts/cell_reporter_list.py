@@ -1,1 +1,0 @@
-cell_reporter = ["k562_erk_akt", "molm14_erk_akt", "cmk_erk_akt", "hela_tb3", "hela_tb6", "aspc1_erk", "bxpc3_erk", "panc1_erk", "hpde_erk", "aml_erk_akt", "pdac", "ovar", "heya8_tb3_hdhb", "ovcar8_tb3_hdhb"]

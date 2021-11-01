@@ -1,4 +1,4 @@
-./output/**
-./data/**
-./docs/**
-./archived/**
+output/**
+data/**
+docs/**
+archived/**
