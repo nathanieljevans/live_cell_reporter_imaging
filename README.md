@@ -5,7 +5,7 @@
 
 To run analysis... 
 
-0. Download data from [box archire folder](https://ohsu.app.box.com/folder/149265669941) (email `evansna@ohsu.edu` for access). 
+0. Download data from [box archive folder](https://ohsu.app.box.com/folder/149265669941) (email `evansna@ohsu.edu` for access). 
 
 1. Unpack zip files `./data/` 
 
