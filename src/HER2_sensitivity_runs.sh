@@ -4,6 +4,7 @@ output=../output
 
 # C:\Users\natha\local\live_cell_reporter_imaging\data\HER2_SKBR3_data_6-7-21\HER2_SKBR3_data_6-7-21
 skbr3_data=../data/HER2_SKBR3_data_6-7-21/HER2_SKBR3_data_6-7-21/
+mkdir $skbr3_data
 
 # C:\Users\natha\local\live_cell_reporter_imaging\data\HER2_EFM192A_data_11-1-21\HER2_EFM192A_data_11-1-21
 efm192A_data=../data/HER2_EFM192A_data_11-1-21/HER2_EFM192A_data_11-1-21
@@ -21,6 +22,14 @@ _resample_sz_="75"
 _load_="normalized" 
 
 # ----------------------------------------------------------
+
+echo 'overwriting output directories...'
+rm -r $output
+mkdir $output
+mkdir $output/SKBR3_NERATINIB/
+mkdir $output/SKBR3_TRASTUZUMAB/
+mkdir $output/EFM192A_NERATINIB/
+mkdir $output/EFM192A_TRASTUZUMAB/
 
 
 echo '#############################################################################'
