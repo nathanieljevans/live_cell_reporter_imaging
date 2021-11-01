@@ -1,3 +1,4 @@
-./notebooks/lightning_logs/**
-./data/**
 ./output/**
+./data/**
+./docs/**
+./archived/**
