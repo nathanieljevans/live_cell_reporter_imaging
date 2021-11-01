@@ -7,7 +7,7 @@ skbr3_data=../data/HER2_SKBR3_data_6-7-21/HER2_SKBR3_data_6-7-21/
 mkdir $skbr3_data
 
 # C:\Users\natha\local\live_cell_reporter_imaging\data\HER2_EFM192A_data_11-1-21\HER2_EFM192A_data_11-1-21
-efm192A_data=../data/HER2_EFM192A_data_11-1-21/HER2_EFM192A_data_11-1-21
+efm192A_data=../data/HER2_EFM192A_data_11-1-21/HER2_EFM192A_data_11-1-21/
 
 # Sensitivity analysis params -----------------------------
 #_repeats_="1 2 3 4 5" 
@@ -83,7 +83,7 @@ for _ in $_repeats_; do
             echo -e '\t' $nclus
             for resample_sz in $_resample_sz_; do
                 echo -e '\t\t' $resample_sz
-                python HER2_classifier.py --data $efm192A_data --drug neratinib --sensitive_line WT --resistant_line T798I --load $load --nclus $nclus --out ./output/EFM192A_NERATINIB --resample_sz $resample_sz
+                python HER2_classifier.py --data $efm192A_data --drug neratinib --sensitive_line WT --resistant_line T798I --load $load --nclus $nclus --out $output/EFM192A_NERATINIB --resample_sz $resample_sz
             done
         done 
     done
@@ -102,7 +102,7 @@ for _ in $_repeats_; do
             echo -e '\t' $nclus
             for resample_sz in $_resample_sz_; do
                 echo -e '\t\t' $resample_sz
-                python HER2_classifier.py --data $efm192A_data --drug trastuzumab --sensitive_line WT --resistant_line ND611 --load $load --nclus $nclus --out ./output/EFM192A_TRASTUZUMAB --resample_sz $resample_sz
+                python HER2_classifier.py --data $efm192A_data --drug trastuzumab --sensitive_line WT --resistant_line ND611 --load $load --nclus $nclus --out $output/EFM192A_TRASTUZUMAB --resample_sz $resample_sz
             done
         done 
     done
