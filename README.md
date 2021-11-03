@@ -1,4 +1,5 @@
 # Live Cell Reporter Imaging
+---
 
 > Project in Dr. Gordon Mills Lab at Oregon Health and Science University. Led by `Dr. Samuel Tsang`, data analysis by `Nate Evans` (evansna@ohsu.edu). 
 ---
@@ -27,5 +28,21 @@ $ ./HER2_sensitivity_runs.sh
 ```
 
 See `HER2_sensitivity_runs.sh` for input/output paths/ 
+
+
+3. Aggregate the results by: 
+
+```bash 
+
+$ python agg_results.py --input ../output/ --out ../output/
+
+```
+
+The aggregated results will be saved in the `--out` directory. There will be two files: 
+- `experiment_run_results.csv` : contains the general results of each experiment; accuracy, inertia, etc ... 
+- `mutant_resistance_results.csv` : contains the aggregated resistance probability assignments from each experiment. 
+
+
+
 
 3. Use the `final_calls.ipynb` notebook to visualize results and make aggregate sensitivity calls. (not yet implemented). 

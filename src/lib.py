@@ -39,14 +39,16 @@ def load_data(args):
         if dataset == 'H210618_Set2': 
             print('fixing minor naming convention issue in dataset "H210618_Set2 - renaming "...L755_T759del..." to "L755T759del"')
             ids = []
+            i = 0 
             for id in _data.cell__treatment.values: 
                 if 'L755_T759del' in id: 
                     #example: efm192a_erk_akt__L755_T759del_untreated
                     id2 = id[:21] + id[22:]
                     ids.append(id2)
+                    i+=1
                 else:
                     ids.append(id)
-
+            print('number of `cell__treatment` values modified:', i)
             _data = _data.assign(cell__treatment=ids)
         # ----------------------------------------------------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------------
@@ -58,9 +60,9 @@ def load_data(args):
     clover_sel = [f'{x}_x' for x in series_sel]
     mscarl_sel = [f'{x}_y' for x in series_sel]
 
-    data = data.assign(drug = [x.split('_', maxsplit=5)[-1] for x in data.cell__treatment])
-    data = data.assign(cell_line = [x.split('_', maxsplit=5)[0] for x in data.cell__treatment])
-    data = data.assign(mutant = [x.split('_', maxsplit=5)[-2] for x in data.cell__treatment])
+    data = data.assign(drug = [x.split('_')[-1].lower() for x in data.cell__treatment])
+    data = data.assign(cell_line = [x.split('_')[0].upper() for x in data.cell__treatment])
+    data = data.assign(mutant = [x.split('_', maxsplit=5)[-2].upper() for x in data.cell__treatment])
 
     return data, clover_sel, mscarl_sel
 
@@ -128,42 +130,38 @@ def fit_kmeans(args, X_train, save=None):
     print('plotting...')
 
     F = plt.figure(figsize=(20,10))
-    print('a')
     for yi in range(args.nclus[0]):
-        print('b')
+
         if args.nclus[0] % 5 == 0: 
             nrows = int(args.nclus[0] / 5) 
         else: 
             nrows = int(args.nclus[0] / 5)  + 1
-        print('c')
+
         plt.subplot(nrows, 5, yi + 1)
-        print('d')
+
         for xx in X_train[y_pred == yi][0:100]:
             plt.plot(xx[:,0], "r-", alpha=.1)
             plt.plot(xx[:,1], "b-", alpha=.1)
-            print('e')
-        print('f')
+
         plt.title(f'cluster sz: {len(X_train[y_pred == yi])}')
         plt.plot(km.cluster_centers_[yi][:,0], "r-", label='clover')
-        print('g')
+
         plt.plot(km.cluster_centers_[yi][:,1], "b-", label='mscarlet')
-        print('h')
+
 
         plt.xlim(0, args.resample_sz[0])
         plt.ylim(0, 1)
         plt.text(0.55, 0.85,'Cluster %d' % (yi + 1),
                     transform=plt.gca().transAxes)
 
-        print('i')
+
     plt.tight_layout()
-    print('k')
 
     if save is not None: 
         plt.savefig(save + '/cluster_plots.png')
         plt.close('all')
     else: 
         plt.show()
-    print('l')
     return y_pred, km
 
 def calc_cluster_proportions(args, y_pred, data): 
@@ -219,10 +217,10 @@ def dimensionality_reduction(args, cm, lb, save=None):
     print('PCA explained variance ratio:', pca.explained_variance_ratio_)
     print('PC shape:', PCs.shape)
 
-    res = pd.DataFrame({'pc1': PCs[:,0], 'pc2':PCs[:,1], 'treatment':[x.split('--')[0].split('_')[-1] for x in lb.classes_], 'cell_line':[x.split('_')[4] for x in lb.classes_]})
+    res = pd.DataFrame({'pc1': PCs[:,0], 'pc2':PCs[:,1], 'treatment':[x.split('--')[0].split('_')[-1].lower() for x in lb.classes_], 'mutant':[x.split('__')[1].split('_')[0].upper() for x in lb.classes_]})
 
     plt.figure(figsize=(7,7))
-    sbn.scatterplot(x='pc1', y='pc2', data=res, hue='cell_line', style='treatment', s=300)
+    sbn.scatterplot(x='pc1', y='pc2', data=res, hue='mutant', style='treatment', s=300)
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
     if save is not None: 
@@ -231,11 +229,11 @@ def dimensionality_reduction(args, cm, lb, save=None):
         plt.show()
 
     plt.figure(figsize=(7,7))
-    sbn.scatterplot(x='pc1', y='pc2', data=res[lambda x: (x.cell_line.isin([_sens, _res]))], hue='cell_line', style='treatment', s=300)
+    sbn.scatterplot(x='pc1', y='pc2', data=res[lambda x: (x.mutant.isin([_sens, _res]))], hue='mutant', style='treatment', s=300)
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
     if save is not None: 
-        plt.savefig(save + '/PCA_labeled.png',bbox_inches='tight')
+        plt.savefig(save + '/PCA_labeled.png', bbox_inches='tight')
         plt.close('all')
     else: 
         plt.show()
@@ -251,12 +249,12 @@ def train_classifier(res, _sens, _res, _drug, save=None):
     print('resistant line:', _res)
     print('drug:', _drug)
 
-    res_drug = res[lambda x: (x.cell_line.isin([_sens, _res])) & (x.treatment == _drug)]
+    res_drug = res[lambda x: (x.mutant.isin([_sens, _res])) & (x.treatment == _drug)]
     print('drug + WT df size: ', res_drug.shape)
 
     X = res_drug[['pc1', 'pc2']].values
-    y_res = ((res_drug.cell_line == _res).values)
-    y_sens = ((res_drug.cell_line == _sens).values)
+    y_res = ((res_drug.mutant == _res).values)
+    y_sens = ((res_drug.mutant == _sens).values)
 
     assert (y_res == ~y_sens).all(), 'y class label assignment has more than 2 classes...'
 
@@ -267,6 +265,7 @@ def train_classifier(res, _sens, _res, _drug, save=None):
     print('# pos class (sensitive):', np.sum(y_sens))
         
     #                                                 , random_state=0
+    # rbf or linear
     model = SVC(kernel='linear', C=10, probability=True)
     model.fit(X,y) 
     y_pred = model.predict(X)
@@ -317,7 +316,7 @@ def predict_new(args, res, model):
     ''''''
     ########### APPLY TO UNLABELED CELL LINES ##############
     print('\npredicting unlabeled sensitivities...')
-    _other = res[lambda x: ~(x.cell_line.isin([args.sensitive_line[0].lower(), args.resistant_line[0].lower()])) & (x.treatment == args.drug[0].lower())].reset_index(drop=True)
+    _other = res[lambda x: ~(x.mutant.isin([args.sensitive_line[0].lower(), args.resistant_line[0].lower()])) & (x.treatment == args.drug[0].lower())].reset_index(drop=True)
 
     X_all = _other[['pc1', 'pc2']].values
 
