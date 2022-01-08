@@ -12,3 +12,5 @@ dependencies:
   - scikit-learn
   - seaborn
   - jupyter
+  - statsmodels
+  - h5py

@@ -9,6 +9,10 @@ import seaborn as sbn
 from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
+import statsmodels.api as sm
+from patsy import dmatrices
 
 
 def load_data(args): 
@@ -76,12 +80,6 @@ def filter_data(args, data, clover_sel, mscarl_sel):
 
     assert data.drug.unique().shape[0] == 3, f'expected three unique treatments before drug filter, got: {data.drug.unique()}'
 
-    '''old approach
-    if args.drug[0].lower() == 'neratinib': 
-        drug_ = '10nm_neratinib'
-    else: 
-        drug_ = '10ug_ml_trastuzumab'
-    '''
     drug_ = None
     for option in data.drug.unique(): 
         if (args.drug[0].lower() in option.lower()) or (args.drug[0].lower() == option.lower()): 
@@ -217,7 +215,10 @@ def dimensionality_reduction(args, cm, lb, save=None):
     print('PCA explained variance ratio:', pca.explained_variance_ratio_)
     print('PC shape:', PCs.shape)
 
-    res = pd.DataFrame({'pc1': PCs[:,0], 'pc2':PCs[:,1], 'treatment':[x.split('--')[0].split('_')[-1].lower() for x in lb.classes_], 'mutant':[x.split('__')[1].split('_')[0].upper() for x in lb.classes_]})
+    res = pd.DataFrame({'pc1': PCs[:,0], 'pc2':PCs[:,1], 
+                        'treatment':[x.split('--')[0].split('_')[-1].lower() for x in lb.classes_], 
+                        'mutant':[x.split('__')[1].split('_')[0].upper() for x in lb.classes_], 
+                        'batch':[x.split('--')[-1].upper() for x in lb.classes_]})
 
     plt.figure(figsize=(7,7))
     sbn.scatterplot(x='pc1', y='pc2', data=res, hue='mutant', style='treatment', s=300)
@@ -266,7 +267,11 @@ def train_classifier(res, _sens, _res, _drug, save=None):
         
     #                                                 , random_state=0
     # rbf or linear
-    model = SVC(kernel='linear', C=10, probability=True)
+    #model = SVC(kernel='linear', C=10, probability=True)
+
+    kernel = 1.0 * RBF([1.0, 1.0])  # for GPC
+    model = GaussianProcessClassifier(kernel, max_iter_predict=250)
+
     model.fit(X,y) 
     y_pred = model.predict(X)
     accuracy = accuracy_score(y, y_pred)
@@ -276,8 +281,14 @@ def train_classifier(res, _sens, _res, _drug, save=None):
 
     #xx = np.linspace(-1, 1, 100)
     #yy = np.linspace(-1, 1, 100).T
-    xx = np.linspace(min(X[:,0]), max(X[:,0]), 100)
-    yy = np.linspace(min(X[:,1]), max(X[:,1]), 100).T
+    xmin, xmax = min(X[:,0]), max(X[:,0])
+    ymin, ymax = min(X[:,1]), max(X[:,1])
+    xpad = (xmax - xmin)*0.1
+    ypad = (ymax - ymin)*0.1
+    _xextent = (xmin-xpad, xmax+xpad)
+    _yextent = (ymin-ypad, ymax+ypad)
+    xx = np.linspace(*_xextent, 100)
+    yy = np.linspace(*_yextent, 100).T
     xx, yy = np.meshgrid(xx, yy)
     Xfull = np.c_[xx.ravel(), yy.ravel()]
 
@@ -285,14 +296,14 @@ def train_classifier(res, _sens, _res, _drug, save=None):
     probas = model.predict_proba(Xfull)
     n_classes = np.unique(y_pred).size
     class_names = ['resistant', 'sensitive']
-    name = 'Support Vector Classifier'
+    #name = 'Support Vector Classifier'
+    name = 'Gaussian Process Classifier'
     for k in range(n_classes):
         plt.subplot(1, n_classes, 0 * n_classes + k + 1)
         plt.title("%s class" % class_names[k])
         if k == 0:
             plt.ylabel(name)
-        imshow_handle = plt.imshow(probas[:, k].reshape((100, 100)),
-                                    extent=(-1, 1, -1, 1), origin='lower')
+        imshow_handle = plt.imshow(probas[:, k].reshape((100, 100)),extent=(*_xextent, *_yextent), origin='lower')
         plt.xticks(())
         plt.yticks(())
         idx = (y_pred == k)
@@ -327,3 +338,48 @@ def predict_new(args, res, model):
     prob_res = prob_res.assign(call=[['res','sens'][np.argmax([x,y])] for x,y in zip(prob_res.prob_res, prob_res.prob_sens)])
 
     return prob_res 
+
+
+def get_batch_effects(args, res, id, save=None):
+
+
+    res_ctrls = res[lambda x: (x.mutant.isin([args.sensitive_line[0], args.resistant_line[0]]))]
+
+    batch_lvls = ['NONE'] + sorted(list(res_ctrls.batch.unique())) # have to include None as a level to enforce one-hot encoding for batches (otherwise the first batch will be used as level zero and not included)
+
+    y, X = dmatrices('pc1 ~ treatment + C(batch, levels=batch_lvls)', data=res_ctrls, return_type='dataframe')
+    mod = sm.OLS(y, X) 
+    fit = mod.fit()
+
+    batch_res1 = fit.params.reset_index().rename({'index':'batch', 0:'pc1_coef'}, axis=1).assign(pc1_pval=fit.pvalues.values)
+    batch_res1 = batch_res1[lambda x: ~x.batch.isin(['Intercept', 'treatment[T.untreated]'])]
+
+    y, X = dmatrices('pc2 ~ treatment + C(batch, levels=batch_lvls)', data=res_ctrls, return_type='dataframe')
+    mod = sm.OLS(y, X) 
+    fit = mod.fit()
+
+    batch_res2 = fit.params.reset_index().rename({'index':'batch', 0:'pc2_coef'}, axis=1).assign(pc2_pval=fit.pvalues.values)
+    batch_res2 = batch_res2[lambda x: ~x.batch.isin(['Intercept', 'treatment[T.untreated]'])]
+
+    batch_res = batch_res1.merge(batch_res2, on='batch')
+
+    batch_res = batch_res.assign(run_id = id)
+
+    batch_res = batch_res.assign(batch = [x.split('[')[1][2:-1] for x in batch_res.batch])
+
+    plot_df = res_ctrls.merge(batch_res, on='batch').assign(FLAGGED = lambda x: (x.pc1_pval < 0.05) | (x.pc2_pval < 0.05))
+
+    plt.figure(figsize=(8,8))
+    sbn.scatterplot(x='pc1', y='pc2', hue='batch', style='FLAGGED', s=400, data=plot_df, alpha=0.85)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+    if save is not None: 
+        plt.savefig(save + '/PCA_by_batch.png', bbox_inches='tight')
+        plt.close('all')
+    else: 
+        plt.show()
+
+    if save is not None: 
+        batch_res.to_csv(save + '/batch_res.csv')
+
+    return batch_res

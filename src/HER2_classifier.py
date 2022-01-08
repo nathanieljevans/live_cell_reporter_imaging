@@ -105,6 +105,9 @@ def get_args():
     
     parser.add_argument('--resample_sz', type=int, nargs=1,
                         help='length of time series to resample to')
+
+    parser.add_argument('--burnin', type=int, nargs=1,
+                        help='number of measurement points to remove from beginning for time series.')
     
     args = parser.parse_args()
     
@@ -112,7 +115,7 @@ def get_args():
     assert args.load[0].lower() in ['normalized', 'raw'], '`--load` must be either "normalized" or "raw"'
     assert (args.nclus[0] <= 50) & (args.nclus[0] >= 2), '`--nclus` should be an integer between 2 and 50'    
     assert (args.resample_sz[0] <= 150) & (args.resample_sz[0] >= 25), '`--resample_sz` should be an integer between 25 and 150' 
-    
+    assert (args.burnin[0] >= 0), 'burnin cannot be negative'
     return args
 
 
@@ -143,6 +146,10 @@ if __name__ == '__main__':
         
         data, clover_sel, mscarl_sel = lib.load_data(args)
 
+        # add burnin 
+        clover_sel = clover_sel[args.burnin[0]:]
+        mscarl_sel = mscarl_sel[args.burnin[0]:]
+
         data = lib.filter_data(args, data, clover_sel, mscarl_sel)
 
         X_train = lib.resample(args, data, clover_sel, mscarl_sel)
@@ -154,6 +161,8 @@ if __name__ == '__main__':
         lib.plot_cluster_corr(cm, save=output_dir)
         
         pca, res, _sens, _res, _drug = lib.dimensionality_reduction(args, cm, lb, save=output_dir)
+
+        batch_res = lib.get_batch_effects(args, res, run_id, save=output_dir)
         
         model, accuracy = lib.train_classifier(res, _sens, _res, _drug, save=output_dir)
         
@@ -174,6 +183,7 @@ if __name__ == '__main__':
                                 'nclus':args.nclus[0],
                                 'resample_sz': args.resample_sz[0],
                                 'load': args.load[0], 
+                                'burnin':args.burnin[0],
                                 'run_id':run_id}, index=[0])
         
         run_res.to_csv(output_dir + '/run_results.csv')
