@@ -1,4 +1,31 @@
 
+# General 
+
+- write methods (while it's fresh)
+
+
+# Specifics 
+
+---
+# 1/18/22
+Meeting with Samuel 
+
+- ~~add a results column for the `cell count` number of each mutant~~
+- Discuss with shannon: the data normalization that Samuel does may behave somewhat as a batch effect correction. 
+
+
+---
+# 1/11/22 
+
+Meeting with shannon 
+
+- add batch effect check at live cell reporter imaging raw value point, e.g., see if specific batches have higher mean intesities. 
+- what quality metrics do we have for each batch? How do we know if a batch is acceptable or bad? 
+- will batch effect correction at this early point induce negative values? e.g., values outside of the 0,1 reporter range? 
+- What EDA + QC does samuel perform? 
+- The major probability assignment changes (mutants that switch call, res->sens or sens->res, are these commonly in the same batch?)
+
+
 ---
 # 11/10/21
 

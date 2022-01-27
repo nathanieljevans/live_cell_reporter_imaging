@@ -98,7 +98,7 @@ def filter_data(args, data, clover_sel, mscarl_sel):
     assert len(clover_sel) == len(mscarl_sel), 'clover timeseries is different length than mscarlet time series'
     print('length of time series AFTER removing time points with NA', len(clover_sel))
 
-    return data
+    return data, clover_sel, mscarl_sel
 
 def resample(args, data, clover_sel, mscarl_sel): 
     ########### RESAMPLE ##############
@@ -268,9 +268,10 @@ def train_classifier(res, _sens, _res, _drug, save=None):
     #                                                 , random_state=0
     # rbf or linear
     #model = SVC(kernel='linear', C=10, probability=True)
+    model = SVC(kernel='rbf', C=1, probability=True, tol=1e-4)
 
-    kernel = 1.0 * RBF([1.0, 1.0])  # for GPC
-    model = GaussianProcessClassifier(kernel, max_iter_predict=250)
+    #kernel = 1.0 * RBF([1.0, 1.0])  # for GPC
+    #model = GaussianProcessClassifier(kernel, max_iter_predict=250)
 
     model.fit(X,y) 
     y_pred = model.predict(X)
@@ -283,8 +284,8 @@ def train_classifier(res, _sens, _res, _drug, save=None):
     #yy = np.linspace(-1, 1, 100).T
     xmin, xmax = min(X[:,0]), max(X[:,0])
     ymin, ymax = min(X[:,1]), max(X[:,1])
-    xpad = (xmax - xmin)*0.1
-    ypad = (ymax - ymin)*0.1
+    xpad = (xmax - xmin)*0.5
+    ypad = (ymax - ymin)*0.5
     _xextent = (xmin-xpad, xmax+xpad)
     _yextent = (ymin-ypad, ymax+ypad)
     xx = np.linspace(*_xextent, 100)
@@ -296,8 +297,8 @@ def train_classifier(res, _sens, _res, _drug, save=None):
     probas = model.predict_proba(Xfull)
     n_classes = np.unique(y_pred).size
     class_names = ['resistant', 'sensitive']
-    #name = 'Support Vector Classifier'
-    name = 'Gaussian Process Classifier'
+    name = 'Support Vector Classifier'
+    #name = 'Gaussian Process Classifier'
     for k in range(n_classes):
         plt.subplot(1, n_classes, 0 * n_classes + k + 1)
         plt.title("%s class" % class_names[k])
@@ -347,14 +348,15 @@ def get_batch_effects(args, res, id, save=None):
 
     batch_lvls = ['NONE'] + sorted(list(res_ctrls.batch.unique())) # have to include None as a level to enforce one-hot encoding for batches (otherwise the first batch will be used as level zero and not included)
 
-    y, X = dmatrices('pc1 ~ treatment + C(batch, levels=batch_lvls)', data=res_ctrls, return_type='dataframe')
+                # any reason to include treatment or cell_line ? 
+    y, X = dmatrices('pc1 ~ C(batch, levels=batch_lvls)', data=res_ctrls, return_type='dataframe')
     mod = sm.OLS(y, X) 
     fit = mod.fit()
 
     batch_res1 = fit.params.reset_index().rename({'index':'batch', 0:'pc1_coef'}, axis=1).assign(pc1_pval=fit.pvalues.values)
     batch_res1 = batch_res1[lambda x: ~x.batch.isin(['Intercept', 'treatment[T.untreated]'])]
 
-    y, X = dmatrices('pc2 ~ treatment + C(batch, levels=batch_lvls)', data=res_ctrls, return_type='dataframe')
+    y, X = dmatrices('pc2 ~ C(batch, levels=batch_lvls)', data=res_ctrls, return_type='dataframe')
     mod = sm.OLS(y, X) 
     fit = mod.fit()
 
@@ -375,6 +377,15 @@ def get_batch_effects(args, res, id, save=None):
 
     if save is not None: 
         plt.savefig(save + '/PCA_by_batch.png', bbox_inches='tight')
+
+        plt.figure(figsize=(5, 10)) 
+        sbn.boxplot(y='batch', x='pc1', data=res[lambda x: (x.mutant.isin([args.resistant_line[0], args.sensitive_line[0]]))])
+        plt.savefig(save + '/PC1_ctrls.png', bbox_inches='tight')
+
+        plt.figure(figsize=(5, 10)) 
+        sbn.boxplot(y='batch', x='pc2', data=res[lambda x: (x.mutant.isin([args.resistant_line[0], args.sensitive_line[0]]))])
+        plt.savefig(save + '/PC2_ctrls.png', bbox_inches='tight')
+
         plt.close('all')
     else: 
         plt.show()
@@ -383,3 +394,51 @@ def get_batch_effects(args, res, id, save=None):
         batch_res.to_csv(save + '/batch_res.csv')
 
     return batch_res
+
+def batch_correction(res, batch_res): 
+    '''
+    Zero-centering batches
+    '''
+    res2 = res.merge(batch_res, on='batch')
+
+    res2 = res2.assign(pc1_uncor = lambda x: x.pc1, 
+                       pc2_uncor = lambda x: x.pc2, 
+                       pc1       = lambda x: x.pc1 - x.pc1_coef,
+                       pc2       = lambda x: x.pc2 - x.pc2_coef)
+
+    return res2
+
+def plot_reporter_batch_effects(data, args, clover_sel, mscarl_sel, save=None): 
+
+    data_ctrls = data[lambda x: (x.mutant.isin(['WT', 'ND611', 'T798I']))]
+
+    clov_ctrls = data_ctrls[['dataset', 'mutant'] + clover_sel.tolist()].set_index(['dataset', 'mutant']).stack().reset_index().rename({'level_1':'idx', 0:'reporter_value'}, axis=1)
+    mscarl_ctrls = data_ctrls[['dataset', 'mutant'] + mscarl_sel.tolist()].set_index(['dataset', 'mutant']).stack().reset_index().rename({'level_1':'idx', 0:'reporter_value'}, axis=1)
+
+    f,axes = plt.subplots(1,2, figsize=(20,10), sharey=True)
+    sbn.boxplot(y='dataset', x='reporter_value', hue='mutant', data=clov_ctrls, ax=axes[0], showfliers=False)
+    sbn.boxplot(y='dataset', x='reporter_value', hue='mutant', data=mscarl_ctrls, ax=axes[1], showfliers=False)
+
+    axes[0].axvline(clov_ctrls[lambda x: x.mutant=='T798I'].reporter_value.mean(), c='orange', label='T798I mean')
+    axes[0].axvline(clov_ctrls[lambda x: x.mutant=='WT'].reporter_value.mean(), c='blue', label='WT mean')
+    axes[0].axvline(clov_ctrls[lambda x: x.mutant=='ND611'].reporter_value.mean(), c='green', label='ND611 mean')
+
+    axes[1].axvline(mscarl_ctrls[lambda x: x.mutant=='T798I'].reporter_value.mean(), c='orange', label='T798I mean')
+    axes[1].axvline(mscarl_ctrls[lambda x: x.mutant=='WT'].reporter_value.mean(), c='blue', label='WT mean')
+    axes[1].axvline(mscarl_ctrls[lambda x: x.mutant=='ND611'].reporter_value.mean(), c='green', label='ND611 mean')
+
+    axes[0].set_title('CLOVER CTRLS')
+    axes[1].set_title('MSCARLET CTRLS')
+
+    axes[0].legend() 
+    axes[1].legend() 
+
+    plt.tight_layout()
+
+    if save is not None: 
+        plt.savefig(save + '/reporter_value_batch_effects.png', bbox_inches='tight')
+    else: 
+        plt.show()
+
+    return data_ctrls
+

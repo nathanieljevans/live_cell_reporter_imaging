@@ -108,14 +108,28 @@ def get_args():
 
     parser.add_argument('--burnin', type=int, nargs=1,
                         help='number of measurement points to remove from beginning for time series.')
+
+    parser.add_argument('--batch_correct', type=str, nargs=1,
+                        help='Whether to apply batch corrections.')
     
     args = parser.parse_args()
+
+    def str2bool(x): 
+        if x.lower() in ['true', 't', 'y', 'yes', '1']: 
+            return True 
+        elif x.lower() in ['false', 'f', 'no', 'n', '0']: 
+            return False 
+        else: 
+            raise ValueError('unrecognized boolean string.')
+
+    args.batch_correct = [str2bool(args.batch_correct[0])]
     
     assert args.drug[0].lower() in ['neratinib', 'trastuzumab'], '`--drug` must be either "trastuzumab" or "neratinib"' 
     assert args.load[0].lower() in ['normalized', 'raw'], '`--load` must be either "normalized" or "raw"'
     assert (args.nclus[0] <= 50) & (args.nclus[0] >= 2), '`--nclus` should be an integer between 2 and 50'    
     assert (args.resample_sz[0] <= 150) & (args.resample_sz[0] >= 25), '`--resample_sz` should be an integer between 25 and 150' 
     assert (args.burnin[0] >= 0), 'burnin cannot be negative'
+    assert args.batch_correct[0] in [True, False], 'batch_correct must be boolean'
     return args
 
 
@@ -150,7 +164,9 @@ if __name__ == '__main__':
         clover_sel = clover_sel[args.burnin[0]:]
         mscarl_sel = mscarl_sel[args.burnin[0]:]
 
-        data = lib.filter_data(args, data, clover_sel, mscarl_sel)
+        data, clover_sel, mscarl_sel = lib.filter_data(args, data, clover_sel, mscarl_sel)
+
+        data_ctrls = lib.plot_reporter_batch_effects(data, args, clover_sel, mscarl_sel, save=output_dir)
 
         X_train = lib.resample(args, data, clover_sel, mscarl_sel)
 
@@ -162,7 +178,16 @@ if __name__ == '__main__':
         
         pca, res, _sens, _res, _drug = lib.dimensionality_reduction(args, cm, lb, save=output_dir)
 
+        # add cell counts 
+        cell_cnts = data.groupby(['mutant', 'drug', 'dataset'])['track_index'].count().reset_index().rename({'track_index':'cell_count'}, axis=1).assign(dataset=lambda x: x.dataset.str.upper())
+        res = res.merge(cell_cnts, left_on=['mutant', 'treatment', 'batch'], right_on=['mutant', 'drug', 'dataset'], how='left', validate='1:1').drop(['drug', 'dataset'], axis=1)
+
         batch_res = lib.get_batch_effects(args, res, run_id, save=output_dir)
+
+        if args.batch_correct[0]: 
+            res = lib.batch_correction(res, batch_res)
+        else: 
+            res.assign(pc1_uncor=None, pc2_uncor=None)
         
         model, accuracy = lib.train_classifier(res, _sens, _res, _drug, save=output_dir)
         
@@ -183,8 +208,9 @@ if __name__ == '__main__':
                                 'nclus':args.nclus[0],
                                 'resample_sz': args.resample_sz[0],
                                 'load': args.load[0], 
-                                'burnin':args.burnin[0],
-                                'run_id':run_id}, index=[0])
+                                'burnin': args.burnin[0],
+                                'batch_corrected': args.batch_correct[0], 
+                                'run_id': run_id}, index=[0])
         
         run_res.to_csv(output_dir + '/run_results.csv')
                          
