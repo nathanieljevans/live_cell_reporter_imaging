@@ -1,5 +1,7 @@
 # Live Cell Reporter Imaging
 ---
+[![DOI](https://zenodo.org/badge/309575585.svg)](https://zenodo.org/badge/latestdoi/309575585)
+
 
 > Project in Dr. Gordon [Mills Lab](https://www.ohsu.edu/school-of-medicine/mills-lab/people) at `Oregon Health and Science University` led by `Dr. Samuel Tsang`, data analysis by `Nate Evans` (evansna@ohsu.edu). 
 ---
