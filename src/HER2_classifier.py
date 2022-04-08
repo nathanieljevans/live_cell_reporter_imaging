@@ -179,8 +179,9 @@ if __name__ == '__main__':
         pca, res, _sens, _res, _drug = lib.dimensionality_reduction(args, cm, lb, save=output_dir)
 
         # add cell counts 
+
         cell_cnts = data.groupby(['mutant', 'drug', 'dataset'])['track_index'].count().reset_index().rename({'track_index':'cell_count'}, axis=1).assign(dataset=lambda x: x.dataset.str.upper())
-        res = res.merge(cell_cnts, left_on=['mutant', 'treatment', 'batch'], right_on=['mutant', 'drug', 'cell_line'], how='left', validate='1:1').drop(['drug', 'dataset'], axis=1)
+        res = res.merge(cell_cnts, left_on=['mutant', 'treatment', 'batch'], right_on=['mutant', 'drug', 'dataset'], how='left', validate='1:1').drop(['drug', 'dataset'], axis=1)
 
         batch_res = lib.get_batch_effects(args, res, run_id, save=output_dir)
 

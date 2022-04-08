@@ -3,10 +3,10 @@
 output=../output/
 
 # C:\Users\natha\local\live_cell_reporter_imaging\data\HER2_SKBR3_data_6-7-21\HER2_SKBR3_data_6-7-21
-skbr3_data=../data/HER2_SKBR3_data_6-7-21/
+skbr3_data=../data/HER2_SKBR3_data_04-07-22/
 
 # C:\Users\natha\local\live_cell_reporter_imaging\data\HER2_EFM192A_data_11-1-21\HER2_EFM192A_data_11-1-21
-efm192A_data=../data/HER2_EFM192A_data_11-1-21/
+efm192A_data=../data/HER2_EFM192A_data_v2/
 
 # Sensitivity analysis params -----------------------------
 _batch_correct_='True False'            # option for PC-space batch correction (centering controls)

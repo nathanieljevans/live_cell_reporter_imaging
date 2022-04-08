@@ -41,13 +41,59 @@ $ python agg_results.py --input ../output/ --out ../output/
 
 ```
 
-3. Use the `sensitivity_analysis.ipynb` notebook to visualize results and make aggregate sensitivity calls.
+3. Use the `sensitivity_analysis.ipynb` notebook to visualize sensitivity analysisresults.
 
+4. Finalize results (aggregate across sensitivity analysis runs) by: 
+
+This script aggregates all results by (cell line, treatment, mutant, batch) and merges the batch effect flag.
+
+(lc_reporter) $ python finalize_results.py --input ../output/ --output ../output/
+
+Will save 5 files: 
+
+    - final_results.csv -- (all results)
+    - final_results-sorted-EFM192A;NERATINIB.csv
+    - final_results-sorted-EFM192A;TRASTUZUMAB.csv
+    - final_results-sorted-SKBR3;NERATINIB.csv
+    - final_results-sorted-SKBR3;TRASTUZUMAB.csv
 
 ---
 
 
 # Data Dictionary 
+
+## `final_results....csv`
+
+applies to: 
+
+    - final_results.csv 
+    - final_results-sorted-EFM192A;NERATINIB.csv
+    - final_results-sorted-EFM192A;TRASTUZUMAB.csv
+    - final_results-sorted-SKBR3;NERATINIB.csv
+    - final_results-sorted-SKBR3;TRASTUZUMAB.csv
+
+> **cell_line**: SKBR3 or EFM192A 	
+
+> **treatment**: neratinib or trastuzumab 
+
+> **mutant**: specific mutation induced in the HER2 gene 
+
+> **batch**: dataset source 
+
+> **mean**: average probability of resistance, aggregated across all sensitivity analysis runs 
+
+> **std**: standard deviation of probability of resistance, aggregated across all sensitivity analysis runs 
+
+> **q05**: 5th percentile of probability of resistance, aggregated across all sensitivity analysis runs 
+
+> **q95**: 95th percentile of probability of resistance, aggregated across all sensitivity analysis runs 
+
+> **min**: minimum value of probability of resistance, aggregated across all sensitivity analysis runs 
+
+> **max**: maximum value of probability of resistance, aggregated across all sensitivity analysis runs 
+
+> **any_flag**: proportion of batch effect flags across all sensitivity analysis runs 
+
 
 ## `mutant_resistance_results.csv` 
 

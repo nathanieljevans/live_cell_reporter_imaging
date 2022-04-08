@@ -221,8 +221,8 @@ def dimensionality_reduction(args, cm, lb, save=None):
                         'batch':[x.split('--')[-1].upper() for x in lb.classes_]})
 
     plt.figure(figsize=(7,7))
-    sbn.scatterplot(x='pc1', y='pc2', data=res, hue='mutant', style='treatment', s=300)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    sbn.scatterplot(x='pc1', y='pc2', data=res, hue='mutant', style='treatment', s=200, alpha=0.9, linewidth=1)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., ncol=4)
 
     if save is not None: 
         plt.savefig(save + '/PCA_all.png', bbox_inches='tight')
@@ -231,7 +231,7 @@ def dimensionality_reduction(args, cm, lb, save=None):
 
     plt.figure(figsize=(7,7))
     sbn.scatterplot(x='pc1', y='pc2', data=res[lambda x: (x.mutant.isin([_sens, _res]))], hue='mutant', style='treatment', s=300)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., ncol=1)
 
     if save is not None: 
         plt.savefig(save + '/PCA_labeled.png', bbox_inches='tight')
