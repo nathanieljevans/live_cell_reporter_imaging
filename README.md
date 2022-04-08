@@ -45,6 +45,10 @@ $ python agg_results.py --input ../output/ --out ../output/
 
 4. Finalize results (aggregate across sensitivity analysis runs) by: 
 
+```bash 
+$ python finalize_results.py --input ../output/ --output ../output/
+```
+
 This script aggregates all results by (cell line, treatment, mutant, batch) and merges the batch effect flag.
 
 (lc_reporter) $ python finalize_results.py --input ../output/ --output ../output/
