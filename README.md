@@ -51,8 +51,6 @@ $ python finalize_results.py --input ../output/ --output ../output/
 
 This script aggregates all results by (cell line, treatment, mutant, batch) and merges the batch effect flag.
 
-(lc_reporter) $ python finalize_results.py --input ../output/ --output ../output/
-
 Will save 5 files: 
 
     - final_results.csv -- (all results)
@@ -60,6 +58,8 @@ Will save 5 files:
     - final_results-sorted-EFM192A;TRASTUZUMAB.csv
     - final_results-sorted-SKBR3;NERATINIB.csv
     - final_results-sorted-SKBR3;TRASTUZUMAB.csv
+    
+ Results are sorted by the mean probability of resistance across all sensitivity analysis runs. 
 
 ---
 
